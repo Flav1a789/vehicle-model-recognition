@@ -10,7 +10,7 @@ import sys
 def main():
 
     INPUT_VIDEO = 'input/traffic.mp4'
-    OUTPUT_VIDEO = 'output/traffic_output_video.mp4'# Name changing depending on the name of input video
+    OUTPUT_VIDEO = 'output/traffic_output_video.mp4'
     
     DETECTION_CONFIDENCE = 0.5  # Minimum confidence accepted vehicle detection
 
