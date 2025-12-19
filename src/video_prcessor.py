@@ -84,8 +84,10 @@ class VideoProcessor:
         processed_count = 0 
         with tqdm(total=total_frames, desc="Progress", unit="frame") as pbar:
             while capture.isOpened():
-                frame = capture.read()
+                ret, frame = capture.read()
                 #checkpoint
+                if not ret:
+                    break 
 
                 # Detection
                 vehicles = self.detector.detect(frame)
@@ -95,6 +97,9 @@ class VideoProcessor:
                     bbox = vehicle['bbox']
                     classification = self.classifier.classify(frame, bbox)
                     
+                    label = self.classifier.simplify_label(
+                        classification['label']
+                    )
                     
                     
                     #frame draw
@@ -103,9 +108,6 @@ class VideoProcessor:
                     )
 
 # add simplification
-                    label = self.classifier.simplify_label(
-                        classification['label']
-                    )
                     
                 
                 out.write(frame)
