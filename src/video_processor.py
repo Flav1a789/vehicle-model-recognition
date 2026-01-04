@@ -85,6 +85,7 @@ class VideoProcessor:
 
         frame_count = 0
         processed_count = 0 
+
         with tqdm(total=total_frames, desc="Progress", unit="frame") as pbar:
             while capture.isOpened():
                 ret, frame = capture.read()
@@ -92,16 +93,18 @@ class VideoProcessor:
                 if not ret:
                     break 
 
-                # Detection
+                # Detection with tracking
                 vehicles = self.detector.detect(frame)
                 
                 # Classification
                 for vehicle in vehicles:
                     bbox = vehicle['bbox']
                     track_id = vehicle['track_id']
+
                     classification = self.classifier.classify(frame, bbox)
                     simplified_label = self.classifier.simplify_label(
                             classification['label'])
+                            
                     stable_label = self.tracker.update_vehicle(
                         track_id=track_id,
                         new_label= simplified_label,
@@ -112,10 +115,15 @@ class VideoProcessor:
                     )
 
                 out.write(frame)
-                
                 frame_count += 1
                 processed_count += 1
                 pbar.update(1)
+
+                #Interesting suggestion from Claude for Optimization: Memory Cleanup every 30 frames
+                #Do we use it in real applications and what are the effects?
+                if frame_count % 30 == 0:  # ← 
+                active_ids = {v['track_id'] for v in vehicles if v['track_id'] != -1}
+                self.tracker.clear_old_vehicles(active_ids)
         
         capture.release()
         out.release()
@@ -189,10 +197,6 @@ class VehicleTracker:
                 'label': old_label,
                 'confidence': old_confidence
             }
-
-        
-        
-        
 
     def get_vehicle_info(self):
         """
