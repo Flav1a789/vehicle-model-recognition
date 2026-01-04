@@ -1,7 +1,7 @@
 
 from src.detector import VehicleDetector
 from src.classifier import VehicleClassifier
-from src.video_prcessor import VideoProcessor
+from src.video_processor import VideoProcessor
 
 import traceback
 import os

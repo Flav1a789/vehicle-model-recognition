@@ -11,8 +11,8 @@ class VehicleDetector:
         self.model = YOLO(model_name)
         self.confidence_threshold = confidence_threshold
         
-        # COCO dataset class IDs for vehicles 2: car, 5: bus, 7: truck
-        self.vehicle_classes = [2,5,7]
+        # COCO dataset class IDs for vehicles 2: car, 5: bus, 7: truck, 3:motorcycle
+        self.vehicle_classes = [2,3, 5,7]
 
 
     def detect(self, frame):
@@ -49,7 +49,7 @@ class VehicleDetector:
             
             if has_ids:
                 track_id =int(results[0].boxes.id[i].item())
-                
+
             else:
                 track_id= -1
 

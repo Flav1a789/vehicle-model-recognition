@@ -104,14 +104,18 @@ class VideoProcessor:
                     classification = self.classifier.classify(frame, bbox)
                     simplified_label = self.classifier.simplify_label(
                             classification['label'])
-                            
-                    stable_label = self.tracker.update_vehicle(
+                #stable_info not stable_lablel since it returns a dict with label and confidence
+                    stable_info = self.tracker.update_vehicle(
                         track_id=track_id,
                         new_label= simplified_label,
                         new_confidence=classification['confidence']
                         )
                     frame = self.draw_vehicle_info(
-                        frame, bbox, stable_label, classification['confidence']
+                        frame,
+                        bbox,
+                        stable_info['label'], 
+                        #classification['confidence']
+                        stable_info['confidence']
                     )
 
                 out.write(frame)
@@ -122,8 +126,8 @@ class VideoProcessor:
                 #Interesting suggestion from Claude for Optimization: Memory Cleanup every 30 frames
                 #Do we use it in real applications and what are the effects?
                 if frame_count % 30 == 0:  # ← 
-                active_ids = {v['track_id'] for v in vehicles if v['track_id'] != -1}
-                self.tracker.clear_old_vehicles(active_ids)
+                    active_ids = {v['track_id'] for v in vehicles if v['track_id'] != -1}
+                    self.tracker.clear_old_vehicles(active_ids)
         
         capture.release()
         out.release()
@@ -135,7 +139,7 @@ class VehicleTracker:
         self.threshold = confidence_increase_threshold
         self.vehicle_history = {}
     
-    def update_vehicles(self, track_id, new_label, new_confidence):
+    def update_vehicle(self, track_id, new_label, new_confidence):
         """
         Method updates vehicle data only if new label&confidence pass threshold
 
@@ -149,7 +153,10 @@ class VehicleTracker:
         """
         #Untracked vehicle
         if track_id == -1:
-            return 
+            return {
+            'label': new_label,
+            'confidence': new_confidence
+            }
             
 
         #Tracked vehicle
@@ -174,11 +181,11 @@ class VehicleTracker:
             #keep max confidence
             updated_confidence = max(old_confidence, new_confidence)
                 
-            self.vehicle_history[track_id]['confidence']= updated_confidence
+            self.vehicle_history[track_id]['confidence'] = updated_confidence
             
             return{
                 'label':new_label,
-                'confidence': new_confidence
+                'confidence': updated_confidence
             }
         #Checking if new_confidence passes the threshold, then update vehicle
         required_confidence = old_confidence * self.threshold
@@ -198,13 +205,13 @@ class VehicleTracker:
                 'confidence': old_confidence
             }
 
-    def get_vehicle_info(self):
+    def get_vehicle_info(self, track_id):
         """
         store vehicle info
         """
         return self.vehicle_history.get(track_id, None)
         
-    def clear_old_vehicles(self):
+    def clear_old_vehicles(self, active_track_ids):
         """for better memory management
         should clarify its use
         Removes vehices if not active in set?"""
