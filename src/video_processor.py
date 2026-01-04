@@ -87,8 +87,10 @@ class VideoProcessor:
         processed_count = 0 
         with tqdm(total=total_frames, desc="Progress", unit="frame") as pbar:
             while capture.isOpened():
-                frame = capture.read()
+                ret, frame = capture.read()
                 #checkpoint
+                if not ret:
+                    break 
 
                 # Detection
                 vehicles = self.detector.detect(frame)
