@@ -25,26 +25,40 @@ class VehicleDetector:
         
         results sturcture in documentation: https://docs.ultralytics.com/modes/predict/#working-with-results
         """
-        results = self.model(
+        results = self.model.track(
             frame, 
             classes=self.vehicle_classes,
+            persist = True,
             verbose=False  
         )
         vehicles = [] 
 
+        #cond: if None return vehicles
+        if results[0].boxes is None or len(results[0].boxes) == 0:
+            return vehicles
         
-        for box in results[0].boxes:
+        has_ids = results[0].boxes.id is not None 
+
+        for i,box in enumerate(results[0].boxes):
+
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             confidence = box.conf[0].item()
             
             class_id = int(box.cls[0].item())
             class_name = results[0].names[class_id]
             
+            if has_ids:
+                track_id =int(results[0].boxes.id[i].item())
+                
+            else:
+                track_id= -1
+
             if confidence >= self.confidence_threshold:
                 vehicles.append({
                     'bbox': (int(x1), int(y1), int(x2), int(y2)),
                     'confidence': confidence,
-                    'class_name': class_name
+                    'class_name': class_name,
+                    'track_id': track_id
                 })
         
         return vehicles

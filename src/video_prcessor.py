@@ -14,6 +14,9 @@ class VideoProcessor:
         self.detector = detector
         self.classifier = classifier
         self.show_confidence = show_confidence
+        self.tracker = VehicleTracker(confidence_increase_threshold = 1.20)
+
+
 
     #Form open CV tutorials
     def draw_vehicle_info(self, frame, bbox, label, confidence):
@@ -93,21 +96,19 @@ class VideoProcessor:
                 # Classification
                 for vehicle in vehicles:
                     bbox = vehicle['bbox']
+                    track_id = vehicle['track_id']
                     classification = self.classifier.classify(frame, bbox)
-                    
-                    
-                    
-                    #frame draw
+                    simplified_label = self.classifier.simplify_label(
+                            classification['label'])
+                    stable_label = self.tracker.update_vehicle(
+                        track_id=track_id,
+                        new_label= simplified_label,
+                        new_confidence=classification['confidence']
+                        )
                     frame = self.draw_vehicle_info(
-                        frame, bbox, label, classification['confidence']
+                        frame, bbox, stable_label, classification['confidence']
                     )
 
-# add simplification
-                    label = self.classifier.simplify_label(
-                        classification['label']
-                    )
-                    
-                
                 out.write(frame)
                 
                 frame_count += 1
@@ -116,3 +117,95 @@ class VideoProcessor:
         
         capture.release()
         out.release()
+
+class VehicleTracker:
+    """Track vehicles"""
+
+    def __init__(self, confidence_increase_threshold= 1.20):
+        self.threshold = confidence_increase_threshold
+        self.vehicle_history = {}
+    
+    def update_vehicles(self, track_id, new_label, new_confidence):
+        """
+        Method updates vehicle data only if new label&confidence pass threshold
+
+        Args: 
+            track_id
+            new_label
+            new_confidence
+        Returns:
+            dict{'label':str, 'confidence':float}
+
+        """
+        #Untracked vehicle
+        if track_id == -1:
+            return 
+            
+
+        #Tracked vehicle
+        if track_id not in self.vehicle_history:
+        #Seen for the first time
+            self.vehicle_history[track_id]= {
+                'label':new_label,
+                'confidence': new_confidence
+            }
+            return {
+                'label':new_label,
+                'confidence': new_confidence
+            }
+        
+        #Seen prevoiusly
+        old_info = self.vehicle_history[track_id]
+        old_label = old_info['label']
+        old_confidence = old_info['confidence']
+
+        #Check if label has changed
+        if new_label == old_label:
+            #keep max confidence
+            updated_confidence = max(old_confidence, new_confidence)
+                
+            self.vehicle_history[track_id]['confidence']= updated_confidence
+            
+            return{
+                'label':new_label,
+                'confidence': new_confidence
+            }
+        #Checking if new_confidence passes the threshold, then update vehicle
+        required_confidence = old_confidence * self.threshold
+        if new_confidence>= required_confidence:
+            self.vehicle_history[track_id] = {
+            'label': new_label,
+            'confidence': new_confidence
+            }
+            return {
+                'label': new_label,
+                'confidence': new_confidence
+            }
+        #else: keep old label
+        else:
+            return {
+                'label': old_label,
+                'confidence': old_confidence
+            }
+
+        
+        
+        
+
+    def get_vehicle_info(self):
+        """
+        store vehicle info
+        """
+        return self.vehicle_history.get(track_id, None)
+        
+    def clear_old_vehicles(self):
+        """for better memory management
+        should clarify its use
+        Removes vehices if not active in set?"""
+
+        self.vehicle_history= {
+            tid:info
+            for tid, info in self.vehicle_history.items()
+            if tid in active_track_ids
+        }
+        
