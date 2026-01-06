@@ -18,8 +18,7 @@ class VideoProcessor:
 
 
 
-    #Form open CV tutorials
-    def draw_vehicle_info(self, frame, bbox, label, confidence):
+    def draw_vehicle_info(self, frame, bbox, label, confidence, track_id= None):
         """        
         Args:
             frame: Video frame in format
@@ -32,7 +31,7 @@ class VideoProcessor:
         # Text settings (STANDART from tutorial)
 
         if self.show_confidence:
-            display_text = f"{label} ({confidence:.2f})"
+            display_text = f":[{track_id}] {label} ({confidence:.2f})"
         else:
             display_text = label
         
@@ -115,7 +114,9 @@ class VideoProcessor:
                         bbox,
                         stable_info['label'], 
                         #classification['confidence']
-                        stable_info['confidence']
+                        stable_info['confidence'],
+                        track_id=track_id
+            
                     )
 
                 out.write(frame)

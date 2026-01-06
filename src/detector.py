@@ -9,6 +9,8 @@ class VehicleDetector:
     def __init__(self, model_name='yolov8n.pt', confidence_threshold=0.5):
       
         self.model = YOLO(model_name)
+        self.model.to("cuda")
+        print(f"YOLO device: {self.model.device}")
         self.confidence_threshold = confidence_threshold
         
         # COCO dataset class IDs for vehicles 2: car, 5: bus, 7: truck, 3:motorcycle
@@ -40,7 +42,7 @@ class VehicleDetector:
         has_ids = results[0].boxes.id is not None 
 
         for i,box in enumerate(results[0].boxes):
-
+            
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             confidence = box.conf[0].item()
             

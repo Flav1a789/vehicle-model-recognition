@@ -20,6 +20,7 @@ class VehicleClassifier:
         # bug! check if device and data .to cuda
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(self.device)
+        
         self.model.eval()  
 
     def classify(self, frame, bbox, min_size=50):
@@ -82,12 +83,6 @@ class VehicleClassifier:
             'confidence': confidence
         }
     
-
-
-
-
-
-
     def simplify_label(self, label):
         """            
         Returns:
